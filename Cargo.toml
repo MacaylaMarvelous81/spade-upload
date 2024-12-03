@@ -1,0 +1,3 @@
+[workspace]
+members = ["spade-upload-cli"]
+resolver = "2"
