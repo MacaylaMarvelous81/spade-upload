@@ -6,11 +6,16 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 use std::time::Duration;
 
+/// Uploads games to a Sprig device running Spade using serial communications.
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Args {
+    /// The serial port of the Sprig device.
     device: String,
+    /// The name that the game should appear under. Limited to 100 bytes.
     name: String,
+    /// Path to the JavaScript source of a Sprig game. If not specified, the
+    /// game is read from stdin.
     source: Option<PathBuf>,
 }
 
