@@ -183,16 +183,18 @@ mod tests {
     struct SerialMock {
         games_left: i32,
         slots_left: usize,
+        legacy: bool,
         current_game: Option<Game>,
         progress: UploadProgress,
         read_buf: VecDeque<u8>,
     }
 
     impl SerialMock {
-        fn new(games_left: i32, slots_left: usize) -> Self {
+        fn new(games_left: i32, slots_left: usize, legacy: bool) -> Self {
             Self {
                 games_left,
                 slots_left,
+                legacy,
                 current_game: None,
                 progress: UploadProgress::Header,
                 read_buf: VecDeque::new(),
@@ -226,6 +228,11 @@ mod tests {
                     source_size: 0,
                 });
                 self.progress = UploadProgress::Header
+            } else if buf == [0, 1, 2, 3, 4] {
+                self.read_buf.extend(match self.legacy {
+                    true => "found startup seq!".as_bytes(),
+                    false => "legacy startup detected".as_bytes(),
+                });
             } else if let Some(game) = &mut self.current_game {
                 match self.progress {
                     UploadProgress::Header => {
@@ -276,7 +283,7 @@ mod tests {
 
     #[test]
     fn upload_result() {
-        let mut port = SerialMock::new(1, 150);
+        let mut port = SerialMock::new(1, 150, false);
         assert_eq!(
             upload_game(
                 &mut port,
@@ -286,7 +293,7 @@ mod tests {
             Ok(UploadResult::AllGood)
         );
 
-        let mut port = SerialMock::new(1, 1);
+        let mut port = SerialMock::new(1, 1, false);
         assert_eq!(
             upload_game(
                 &mut port,
@@ -296,7 +303,7 @@ mod tests {
             Ok(UploadResult::OutOfFlash)
         );
 
-        let mut port = SerialMock::new(0, 150);
+        let mut port = SerialMock::new(0, 150, false);
         assert_eq!(
             upload_game(
                 &mut port,
@@ -305,5 +312,14 @@ mod tests {
             ),
             Ok(UploadResult::OutOfMetadata)
         );
+    }
+
+    #[test]
+    fn legacy() {
+        let mut port = SerialMock::new(1, 150, false);
+        assert!(!is_running_legacy(&mut port).unwrap());
+
+        let mut port = SerialMock::new(1, 150, true);
+        assert!(is_running_legacy(&mut port).unwrap());
     }
 }
