@@ -1,0 +1,12 @@
+.TH SPADE-UPLOAD 1
+.SH NAME
+spade-upload \- upload games to serial devices running spade
+.SH SYNOPSIS
+.B spade-upload
+.IR device
+.IR name
+[\fIsource\fR]
+.SH DESCRIPTION
+.B spade-upload
+connects to a device over the serial port specified and uploads the game source at the specified path.
+If no source path was specified, the game source is read from stdin instead.
