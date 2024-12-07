@@ -8,7 +8,7 @@
 //! You can do this by using the
 //! [serialport](https://crates.io/crates/serialport) crate; this example uses
 //! the device at `/dev/cu.usbmodem14101`.
-//! ```rust
+//! ```no_run
 //! use std::time::Duration;
 //!
 //! let mut port = serialport::new("/dev/cu.usbmodem14101", 115200)
@@ -18,7 +18,7 @@
 //! # Ok::<(), serialport::Error>(())
 //! ```
 //! Then, pass it to methods in this crate.
-//! ```rust
+//! ```no_run
 //! # use std::time::Duration;
 //! #
 //! # let mut port = serialport::new("/dev/cu.usbmodem14101", 115200)
@@ -62,6 +62,7 @@ pub fn is_running_legacy(io: &mut (impl Write + Read)) -> Result<bool, std::io::
 /// command, given the serial communication was successful.
 ///
 /// Returned in a Result by `spade_serial::upload_game`.
+#[derive(Debug, Clone, PartialEq)]
 pub enum UploadResult {
     /// Represents the response `'ALL_GOOD'`. This means the game was accepted
     /// by the device.
@@ -78,7 +79,7 @@ pub enum UploadResult {
 
 /// Represents the possible communication errors while trying to upload a game
 /// with `spade_serial::upload_game`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum UploadError {
     /// The name provided was too large (over 100 bytes).
     InvalidName,
@@ -159,5 +160,150 @@ pub fn upload_game(
                 break Err(UploadError::NoResponse);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::VecDeque;
+
+    use super::*;
+
+    struct Game {
+        name: String,
+        source: String,
+        source_size: usize,
+    }
+
+    enum UploadProgress {
+        Header,
+        Body,
+    }
+
+    struct SerialMock {
+        games_left: i32,
+        slots_left: usize,
+        current_game: Option<Game>,
+        progress: UploadProgress,
+        read_buf: VecDeque<u8>,
+    }
+
+    impl SerialMock {
+        fn new(games_left: i32, slots_left: usize) -> Self {
+            Self {
+                games_left,
+                slots_left,
+                current_game: None,
+                progress: UploadProgress::Header,
+                read_buf: VecDeque::new(),
+            }
+        }
+    }
+
+    impl Read for SerialMock {
+        fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+            let mut bytes = 0;
+            for byte in buf.iter_mut() {
+                if let Some(new) = self.read_buf.pop_front() {
+                    *byte = new;
+                    bytes = bytes + 1;
+                }
+            }
+            Ok(bytes)
+        }
+    }
+
+    impl Write for SerialMock {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            let text = std::str::from_utf8(buf)
+                .map_err(|_| std::io::Error::from(std::io::ErrorKind::InvalidInput))
+                .unwrap();
+
+            if text == "UPLOAD" {
+                self.current_game = Some(Game {
+                    name: String::new(),
+                    source: String::new(),
+                    source_size: 0,
+                });
+                self.progress = UploadProgress::Header
+            } else if let Some(game) = &mut self.current_game {
+                match self.progress {
+                    UploadProgress::Header => {
+                        if game.name.len() < 100 {
+                            let bytes = text.len().min(100 - game.name.len());
+                            game.name.push_str(&text[..bytes])
+                        }
+
+                        if game.name.len() >= 100 {
+                            self.progress = UploadProgress::Body
+                        }
+                    }
+                    UploadProgress::Body => {
+                        if game.source_size == 0 {
+                            let (int_bytes, _) = buf.split_at(std::mem::size_of::<u32>());
+                            game.source_size =
+                                usize::try_from(u32::from_le_bytes(int_bytes.try_into().unwrap()))
+                                    .unwrap();
+                        } else {
+                            game.source.push_str(text);
+
+                            if game.source.len() >= game.source_size {
+                                // Upload finish
+                                self.read_buf.extend(
+                                    // I'm too lazy. I don't want to calculate slots.
+                                    if game.source_size > self.slots_left {
+                                        "OO_FLASH".as_bytes()
+                                    } else if self.games_left <= 0 {
+                                        "OO_METADATA".as_bytes()
+                                    } else {
+                                        self.games_left -= 1;
+                                        "ALL_GOOD".as_bytes()
+                                    },
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            Ok(buf.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            todo!()
+        }
+    }
+
+    #[test]
+    fn upload_result() {
+        let mut port = SerialMock::new(1, 150);
+        assert_eq!(
+            upload_game(
+                &mut port,
+                &String::from("all good test"),
+                &String::from("console.log('good')")
+            ),
+            Ok(UploadResult::AllGood)
+        );
+
+        let mut port = SerialMock::new(1, 1);
+        assert_eq!(
+            upload_game(
+                &mut port,
+                &String::from("oo flash test"),
+                &String::from("console.log('barely any space')")
+            ),
+            Ok(UploadResult::OutOfFlash)
+        );
+
+        let mut port = SerialMock::new(0, 150);
+        assert_eq!(
+            upload_game(
+                &mut port,
+                &String::from("oo meta test"),
+                &String::from("console.log('too many games')")
+            ),
+            Ok(UploadResult::OutOfMetadata)
+        );
     }
 }
