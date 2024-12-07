@@ -163,6 +163,8 @@ pub fn upload_game(
     }
 }
 
+/// Unit testing with a mock serial device. For testing actual devices, use
+/// the integration tests.
 #[cfg(test)]
 mod tests {
     use std::collections::VecDeque;
