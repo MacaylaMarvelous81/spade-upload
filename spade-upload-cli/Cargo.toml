@@ -1,9 +1,0 @@
-[package]
-name = "spade-upload-cli"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-clap = { version = "4.5.20", features = ["derive"] }
-serialport = "4.6.0"
-spade-serial = { version = "0.1.0", path = "../spade-serial"}
