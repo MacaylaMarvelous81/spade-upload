@@ -7,6 +7,7 @@ authors = ["Jomar Milan"]
 repository = "https://github.com/MacaylaMarvelous81/spade-upload"
 keywords = ["spade", "sprig", "hackclub"]
 license = "MIT"
+readme = "../README.md"
 
 [dependencies]
 
