@@ -1,3 +1,9 @@
 [workspace]
 members = ["spade-serial", "spade-upload"]
 resolver = "2"
+
+[workspace.package]
+authors = ["Jomar Milan"]
+repository = "https://github.com/MacaylaMarvelous81/spade-upload"
+keywords = ["spade", "sprig", "hackclub"]
+license = "MIT"

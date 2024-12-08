@@ -2,6 +2,12 @@
 name = "spade-upload"
 version = "0.1.0"
 edition = "2021"
+description = "Command line utility to upload games to a Sprig device"
+categories = ["command-line-utilities"]
+authors = ["Jomar Milan"]
+repository = "https://github.com/MacaylaMarvelous81/spade-upload"
+keywords = ["spade", "sprig", "hackclub"]
+license = "MIT"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }

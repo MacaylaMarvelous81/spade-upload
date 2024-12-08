@@ -2,6 +2,11 @@
 name = "spade-serial"
 version = "0.1.0"
 edition = "2021"
+description = "Communications with Sprig devices over serial port"
+authors = ["Jomar Milan"]
+repository = "https://github.com/MacaylaMarvelous81/spade-upload"
+keywords = ["spade", "sprig", "hackclub"]
+license = "MIT"
 
 [dependencies]
 
