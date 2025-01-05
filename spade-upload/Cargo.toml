@@ -1,6 +1,6 @@
 [package]
 name = "spade-upload"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Command line utility to upload games to a Sprig device"
 categories = ["command-line-utilities"]
@@ -8,9 +8,9 @@ authors = ["Jomar Milan"]
 repository = "https://github.com/MacaylaMarvelous81/spade-upload"
 keywords = ["spade", "sprig", "hackclub"]
 license = "MIT"
-readme = "../README.md"
+readme = "README.md"
 
 [dependencies]
 clap = { version = "4.5.23", features = ["derive"] }
 serialport = "4.6.1"
-spade-serial = { version = "0.1.0", path = "../spade-serial" }
+spade-serial = { version = "0.1.1", path = "../spade-serial" }

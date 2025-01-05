@@ -42,6 +42,10 @@ use std::str::Utf8Error;
 /// the device is found to be running a legacy Spade version, in which case
 /// `Ok(true)` will be returned.
 ///
+///  BUG: If no response is received from the device for some reason, such as
+/// the serial output being consumed by another program, this function could
+/// yield indefinitely.
+///
 /// ### Errors
 /// This function may return any IO errors from `Write::write_all` or
 /// `Read::read`. It may also return an error of `ErrorKind::InvalidData` if
